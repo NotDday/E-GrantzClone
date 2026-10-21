@@ -1,0 +1,17 @@
+{
+  "name": "awt",
+  "version": "1.0.0",
+  "description": "Full-stack educational clone of the Kerala government scholarship portal [https://egrantz.kerala.gov.in/](https://egrantz.kerala.gov.in/), built for the Advanced Web Technologies course. This MERN stack version evolved from the pure HTML/CSS/JS first evaluation.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -k -n backend,frontend -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
