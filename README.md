@@ -28,7 +28,7 @@ Full-stack educational clone of the Kerala government scholarship portal [https:
 │   ├── models/            # Mongoose schemas (User, Student, Application, etc.)
 │   ├── routes/            # API endpoints (auth, notices, students, etc.)
 │   ├── utils/             # Helper utilities (e.g. mailer)
-│   ├── seed.js            # Database seeder (districts, castes, schemes, sample users)
+│   ├── seed.js            # Database seeder (districts, schemes, sample users)
 │   ├── server.js          # Entry point
 │   ├── package.json
 │   └── .env.example       # Environment template
@@ -56,6 +56,13 @@ Full-stack educational clone of the Kerala government scholarship portal [https:
 - **Students:** Registration, profile management, register number generation
 - **Applications:** Scholarship application submission with status tracking
 - **Institutions:** Institution registration, verification workflows
+- **Document Vault:** Students can upload and manage documents (income cert, caste cert, marklist, aadhaar, etc.) via base64 upload
+- **Eligibility Checker:** Public tool to check which schemes a student is eligible for based on category and income
+- **Scheme Detail Page:** Public page showing full scheme details with application CTA
+- **Sanctioned List:** Admin portal filter to search sanctioned applications by name, scheme, institution, year
+- **Profile Completeness Meter:** UI component in student portal showing % completion with color-coded progress bar
+- **Admin Analytics Dashboard:** Real-time KPIs including scheme-wise counts, status-wise counts, district-wise sanctioned amounts
+- **Audit Log:** Full audit trail showing actor, action, target model, timestamps verification workflows
 - **Notices:** CRUD operations for scholarship notices
 - **Schemes:** Scholarship scheme management with eligibility rules
 
@@ -148,12 +155,13 @@ Full-stack educational clone of the Kerala government scholarship portal [https:
 
 - **User:** Authentication, roles (student/institution/official/admin)
 - **Student:** Profile, bank details, Aadhaar last 4, institution linkage
-- **Application:** Scholarship application with status (pending/approved/rejected)
+- **Application:** Scholarship application with status (draft/submitted/institution_verified/approved/rejected/paid) and status history
 - **Institution:** College/institution data
 - **Scheme:** Scholarship scheme details
 - **Notice:** Portal announcements
-- **District, Caste, Course:** Reference data for dropdowns
-- **AcademicRecord, Document, Payment:** Supporting entities
+- **Contact:** Directorate contact directory
+- **District, Course:** Reference data for dropdowns
+- **Counter:** Atomic sequence counters for application and register numbers
 
 ---
 
