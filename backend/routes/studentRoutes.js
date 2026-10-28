@@ -53,6 +53,39 @@ router.put('/me', protect, async (req, res) => {
   }
 });
 
+router.get('/me/completeness', protect, async (req, res) => {
+  try {
+    const student = await Student.findOne({ userId: req.user._id })
+      .populate('userId', 'name email')
+      .populate('address.districtId');
+    if (!student) return res.status(404).json({ success: false, message: 'Student profile not found' });
+
+    const checks = [
+      { key: 'name', label: 'Full Name', done: !!(student.userId && student.userId.name) },
+      { key: 'email', label: 'Email', done: !!(student.userId && student.userId.email) },
+      { key: 'phone', label: 'Phone', done: !!student.phone },
+      { key: 'dob', label: 'Date of Birth', done: !!student.dateOfBirth },
+      { key: 'gender', label: 'Gender', done: !!student.gender },
+      { key: 'aadhaar', label: 'Aadhaar (last 4)', done: !!student.aadhaarLast4 },
+      { key: 'address', label: 'Permanent Address', done: !!(student.address && student.address.line1 && student.address.pincode) },
+      { key: 'district', label: 'District', done: !!(student.address && student.address.districtId) },
+      { key: 'presentAddress', label: 'Present Address', done: !!(student.presentAddress && student.presentAddress.line1) },
+      { key: 'institution', label: 'Institution', done: !!student.institutionId },
+      { key: 'course', label: 'Course', done: !!student.courseId },
+      { key: 'yearOfStudy', label: 'Year of Study', done: !!student.yearOfStudy },
+      { key: 'bankHolder', label: 'Bank Account Holder', done: !!(student.bank && student.bank.accountHolder) },
+      { key: 'bankName', label: 'Bank Name', done: !!(student.bank && student.bank.bankName) },
+      { key: 'ifsc', label: 'IFSC', done: !!(student.bank && student.bank.ifsc) },
+      { key: 'accountLast4', label: 'Account No (last 4)', done: !!(student.bank && student.bank.accountLast4) }
+    ];
+    const doneCount = checks.filter(c => c.done).length;
+    const percent = Math.round((doneCount / checks.length) * 100);
+    res.json({ success: true, percent, doneCount, total: checks.length, checks });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/me/profile-pic', protect, async (req, res) => {
   try {
     const student = await Student.findOne({ userId: req.user._id });

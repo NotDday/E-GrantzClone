@@ -172,4 +172,44 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
+// GET /api/applications/sanctioned - Public: search approved/paid applications
+router.get('/sanctioned', async (req, res) => {
+  try {
+    const { name, scheme, institution, year, page = 1, limit = 20 } = req.query;
+    const filter = { status: { $in: ['approved', 'paid'] } };
+    if (year) filter.academicYear = year;
+
+    let query = Application.find(filter)
+      .populate({ path: 'studentId', populate: { path: 'userId', select: 'name' } })
+      .populate('schemeId', 'name code amount')
+      .populate('institutionId', 'name code')
+      .populate('courseId', 'name code')
+      .sort({ updatedAt: -1 });
+
+    let results = await query.lean();
+
+    // Post-filter on populated fields
+    if (name) {
+      const lc = name.toLowerCase();
+      results = results.filter(a => (a.studentId?.userId?.name || '').toLowerCase().includes(lc));
+    }
+    if (scheme) {
+      const lc = scheme.toLowerCase();
+      results = results.filter(a => (a.schemeId?.name || '').toLowerCase().includes(lc));
+    }
+    if (institution) {
+      const lc = institution.toLowerCase();
+      results = results.filter(a => (a.institutionId?.name || '').toLowerCase().includes(lc));
+    }
+
+    const total = results.length;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const paginated = results.slice(skip, skip + parseInt(limit));
+
+    res.json({ success: true, total, page: parseInt(page), applications: paginated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

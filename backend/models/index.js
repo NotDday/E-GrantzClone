@@ -8,6 +8,8 @@ const { Counter, getNextApplicationNumber, getNextStudentRegisterNumber } = requ
 const Application = require('./Application');
 const Notice = require('./Notice');
 const Contact = require('./Contact');
+const Document = require('./Document');
+const AuditLog = require('./AuditLog');
 
 const models = {
   User,
@@ -19,7 +21,9 @@ const models = {
   Counter,
   Application,
   Notice,
-  Contact
+  Contact,
+  Document,
+  AuditLog
 };
 
 async function syncAllIndexes() {

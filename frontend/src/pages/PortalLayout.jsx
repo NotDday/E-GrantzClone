@@ -244,6 +244,13 @@ const PortalLayout = ({ navigate, title, children }) => {
                   <span>Apply for Scholarships</span>
                 </a>
               </li>
+
+              <li className={currentPath === '/portal/documents' ? 'active' : ''}>
+                <a href="/portal/documents" onClick={handleNav('/portal/documents')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', color: currentPath === '/portal/documents' ? '#F44336' : '#555' }}>
+                  <i className="material-icons" style={{ color: currentPath === '/portal/documents' ? '#F44336' : '#777', fontSize: '18px' }}>folder_open</i>
+                  <span>Document Vault</span>
+                </a>
+              </li>
             </ul>
           </div>
 

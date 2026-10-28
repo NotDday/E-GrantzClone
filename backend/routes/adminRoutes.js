@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Application, Scheme, Notice, Student, User, Institution } = require('../models');
 const { protect, authorize } = require('../middleware/auth');
+const { logAudit } = require('../utils/auditLogger');
 
 // Middleware for admin / official access
 const adminOnly = [protect, authorize('admin', 'official')];
@@ -81,6 +82,17 @@ router.put('/applications/:id/status', adminOnly, async (req, res) => {
     });
 
     await application.save();
+
+    const actionMap = { approved: 'application_approved', rejected: 'application_rejected', reverted: 'application_reverted', paid: 'application_paid', institution_verified: 'application_submitted' };
+    await logAudit({
+      req,
+      actor: req.user._id,
+      actorRole: req.user.role,
+      action: actionMap[status] || 'application_submitted',
+      targetModel: 'Application',
+      targetId: application._id,
+      details: { applicationNumber: application.applicationNumber, remarks: remarks || '' }
+    });
 
     res.json({
       success: true,

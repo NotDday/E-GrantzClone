@@ -7,6 +7,11 @@ const AdminPortal = ({ navigate }) => {
   const [applications, setApplications] = useState([]);
   const [schemes, setSchemes] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [categoryData, setCategoryData] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditFilter, setAuditFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -19,6 +24,31 @@ const AdminPortal = ({ navigate }) => {
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'audit') fetchData();
+  }, [auditFilter]);
+
+  const handleExportCsv = async () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    try {
+      const res = await axios.get('/api/analytics/export/csv', {
+        headers: { Authorization: 'Bearer ' + token },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', 'applications_export.csv');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setMessage('CSV exported successfully!');
+    } catch (err) {
+      setError('Failed to export CSV.');
+    }
+  };
 
   const fetchData = async () => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -41,6 +71,18 @@ const AdminPortal = ({ navigate }) => {
       } else if (activeTab === 'notices') {
         const res = await axios.get('/api/admin/notices', { headers });
         setNotices(res.data.notices || []);
+      } else if (activeTab === 'analytics') {
+        const [ovRes, catRes] = await Promise.all([
+          axios.get('/api/analytics/overview', { headers }),
+          axios.get('/api/analytics/category', { headers })
+        ]);
+        setAnalytics(ovRes.data);
+        setCategoryData(catRes.data.byCategory);
+      } else if (activeTab === 'audit') {
+        const url = '/api/audit?limit=100' + (auditFilter ? '&action=' + auditFilter : '');
+        const res = await axios.get(url, { headers });
+        setAuditLogs(res.data.logs || []);
+        setAuditTotal(res.data.total || 0);
       }
     } catch (err) {
       console.error(err);
@@ -166,6 +208,8 @@ const AdminPortal = ({ navigate }) => {
           <button style={tabBtn('applications', 'Manage Applications')} onClick={() => setActiveTab('applications')}>Manage Applications</button>
           <button style={tabBtn('schemes', 'Manage Schemes')} onClick={() => setActiveTab('schemes')}>Manage Schemes</button>
           <button style={tabBtn('notices', 'Manage Notices')} onClick={() => setActiveTab('notices')}>Manage Notices</button>
+          <button style={tabBtn('analytics', 'Reports & Analytics')} onClick={() => setActiveTab('analytics')}>Reports & Analytics</button>
+          <button style={tabBtn('audit', 'Audit Log')} onClick={() => setActiveTab('audit')}>Audit Log</button>
         </div>
 
         {loading ? (
@@ -345,6 +389,194 @@ const AdminPortal = ({ navigate }) => {
                     </table>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, color: '#002147' }}>Reports &amp; Analytics</h3>
+                  <button onClick={handleExportCsv} style={{ backgroundColor: '#2e7d32', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    ⬇ Export CSV
+                  </button>
+                </div>
+
+                {loading ? (
+                  <div style={{ background: '#fff', padding: '30px', borderRadius: '6px', textAlign: 'center' }}>Loading analytics...</div>
+                ) : analytics ? (
+                  <>
+                    {/* Status breakdown */}
+                    <div style={{ background: '#fff', padding: '25px', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '25px' }}>
+                      <h4 style={{ marginTop: 0, color: '#002147', borderBottom: '2px solid #ffb71c', paddingBottom: '8px' }}>Applications by Stage (Pendency)</h4>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginTop: '15px' }}>
+                        {(analytics.byStatus || []).map(s => {
+                          const maxCount = Math.max(...(analytics.byStatus || []).map(x => x.count), 1);
+                          const pct = Math.round((s.count / maxCount) * 100);
+                          const colors = { draft: '#9e9e9e', submitted: '#1565c0', institution_verified: '#7b1fa2', approved: '#2e7d32', rejected: '#c62828', reverted: '#e65100', paid: '#00838f' };
+                          return (
+                            <div key={s._id} style={{ flex: '1 1 200px', minWidth: '200px' }}>
+                              <div style={{ fontSize: '13px', color: '#666', marginBottom: '5px' }}>{s._id.replace(/_/g, ' ')}</div>
+                              <div style={{ fontSize: '24px', fontWeight: 'bold', color: colors[s._id] || '#333' }}>{s.count}</div>
+                              <div style={{ background: '#eee', borderRadius: '4px', height: '8px', marginTop: '5px', overflow: 'hidden' }}>
+                                <div style={{ width: pct + '%', height: '100%', background: colors[s._id] || '#333' }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Scheme-wise table */}
+                    <div style={{ background: '#fff', padding: '25px', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: '25px' }}>
+                      <h4 style={{ marginTop: 0, color: '#002147', borderBottom: '2px solid #ffb71c', paddingBottom: '8px' }}>Scheme-wise Sanctions</h4>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#002147', color: '#fff' }}>
+                            <th style={{ padding: '10px', textAlign: 'left' }}>Scheme</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Submitted</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Inst. Verified</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Approved</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Reverted</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Paid</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(analytics.byScheme || {}).map(([name, counts]) => (
+                            <tr key={name} style={{ borderBottom: '1px solid #eee' }}>
+                              <td style={{ padding: '10px', fontWeight: 'bold' }}>{name}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>{counts.submitted || 0}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>{counts.institution_verified || 0}</td>
+                              <td style={{ padding: '10px', textAlign: 'center', color: '#2e7d32', fontWeight: 'bold' }}>{counts.approved || 0}</td>
+                              <td style={{ padding: '10px', textAlign: 'center', color: '#e65100' }}>{counts.reverted || 0}</td>
+                              <td style={{ padding: '10px', textAlign: 'center', color: '#00838f', fontWeight: 'bold' }}>{counts.paid || 0}</td>
+                            </tr>
+                          ))}
+                          {Object.keys(analytics.byScheme || {}).length === 0 && (
+                            <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>No data available</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Category-wise + District-wise side by side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+                      <div style={{ background: '#fff', padding: '25px', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <h4 style={{ marginTop: 0, color: '#002147', borderBottom: '2px solid #ffb71c', paddingBottom: '8px' }}>Category-wise Counts</h4>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Category</th>
+                              <th style={{ padding: '8px', textAlign: 'center' }}>Approved</th>
+                              <th style={{ padding: '8px', textAlign: 'center' }}>Paid</th>
+                              <th style={{ padding: '8px', textAlign: 'center' }}>Pending</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(categoryData || {}).map(([cat, counts]) => (
+                              <tr key={cat} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={{ padding: '8px', fontWeight: 'bold' }}>{cat}</td>
+                                <td style={{ padding: '8px', textAlign: 'center', color: '#2e7d32' }}>{counts.approved || 0}</td>
+                                <td style={{ padding: '8px', textAlign: 'center', color: '#00838f' }}>{counts.paid || 0}</td>
+                                <td style={{ padding: '8px', textAlign: 'center', color: '#e65100' }}>{(counts.submitted || 0) + (counts.institution_verified || 0)}</td>
+                              </tr>
+                            ))}
+                            {Object.keys(categoryData || {}).length === 0 && (
+                              <tr><td colSpan={4} style={{ padding: '15px', textAlign: 'center', color: '#999' }}>No data</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div style={{ background: '#fff', padding: '25px', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <h4 style={{ marginTop: 0, color: '#002147', borderBottom: '2px solid #ffb71c', paddingBottom: '8px' }}>District-wise Disbursal</h4>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>District</th>
+                              <th style={{ padding: '8px', textAlign: 'center' }}>Sanctioned</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(analytics.byDistrict || []).map(d => (
+                              <tr key={d._id.districtId} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={{ padding: '8px', fontWeight: 'bold' }}>{d._id.districtName}</td>
+                                <td style={{ padding: '8px', textAlign: 'center', color: '#2e7d32', fontWeight: 'bold' }}>{d.count}</td>
+                              </tr>
+                            ))}
+                            {(analytics.byDistrict || []).length === 0 && (
+                              <tr><td colSpan={2} style={{ padding: '15px', textAlign: 'center', color: '#999' }}>No data</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ background: '#fff', padding: '30px', borderRadius: '6px', textAlign: 'center' }}>No analytics data available.</div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'audit' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, color: '#002147' }}>Audit Log <small style={{ color: '#999', fontWeight: 'normal' }}>({auditTotal} records)</small></h3>
+                  <select value={auditFilter} onChange={e => setAuditFilter(e.target.value)} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: '4px' }}>
+                    <option value="">All Actions</option>
+                    <option value="application_approved">Approved</option>
+                    <option value="application_rejected">Rejected</option>
+                    <option value="application_reverted">Reverted</option>
+                    <option value="application_paid">Paid</option>
+                    <option value="document_uploaded">Doc Uploaded</option>
+                    <option value="document_verified">Doc Verified</option>
+                    <option value="scheme_created">Scheme Created</option>
+                    <option value="notice_created">Notice Created</option>
+                  </select>
+                </div>
+
+                {loading ? (
+                  <div style={{ background: '#fff', padding: '30px', borderRadius: '6px', textAlign: 'center' }}>Loading audit logs...</div>
+                ) : auditLogs.length === 0 ? (
+                  <div style={{ background: '#fff', padding: '30px', borderRadius: '6px', textAlign: 'center', color: '#999' }}>No audit records found.</div>
+                ) : (
+                  <div style={{ background: '#fff', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#002147', color: '#fff' }}>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>Timestamp</th>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>Action</th>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>Actor</th>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>Target</th>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>IP</th>
+                          <th style={{ padding: '10px', textAlign: 'left' }}>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auditLogs.map(log => (
+                          <tr key={log._id} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={{ padding: '10px', fontSize: '12px', color: '#666' }}>{new Date(log.createdAt).toLocaleString()}</td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ background: '#e3f2fd', color: '#1565c0', borderRadius: '3px', padding: '2px 8px', fontSize: '12px' }}>
+                                {log.action.replace(/_/g, ' ')}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px', fontSize: '13px' }}>
+                              {log.actor?.name || '—'}<br />
+                              <small style={{ color: '#999' }}>{log.actorRole}</small>
+                            </td>
+                            <td style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
+                              {log.targetModel ? `${log.targetModel}` : '—'}{log.targetId ? `: ${String(log.targetId).slice(-6)}` : ''}
+                            </td>
+                            <td style={{ padding: '10px', fontSize: '12px', color: '#999' }}>{log.ip || '—'}</td>
+                            <td style={{ padding: '10px', fontSize: '12px', color: '#666' }}>
+                              {log.details ? JSON.stringify(log.details).slice(0, 80) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

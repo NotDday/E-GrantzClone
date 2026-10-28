@@ -25,6 +25,8 @@ const Navbar = ({ navigate }) => {
           <ul className="right">
             <li className="active-item"><a href="/" onClick={handleNav('/')}>Home</a></li>
             <li><a href="#scholarships">Notice Board</a></li>
+            <li><a href="/eligibility" onClick={handleNav('/eligibility')}>Eligibility Checker</a></li>
+            <li><a href="/sanctioned" onClick={handleNav('/sanctioned')}>Sanctioned List</a></li>
             <li><a href="#OfficialLogin">Login</a></li>
             <li><a href="/contact" onClick={handleNav('/contact')}>Contact</a></li>
             <li><a href="/faq" onClick={handleNav('/faq')}>FAQ</a></li>

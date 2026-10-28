@@ -25,6 +25,10 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import TrackStudentPage from './pages/TrackStudentPage';
 import ApplicationVerificationPage from './pages/ApplicationVerificationPage';
 import AdminPortal from './pages/AdminPortal';
+import DocumentVault from './pages/DocumentVault';
+import EligibilityChecker from './pages/EligibilityChecker';
+import SchemeDetailPage from './pages/SchemeDetailPage';
+import SanctionedList from './pages/SanctionedList';
 
 import './assets/css/responsee.css';
 import './assets/css/components.css';
@@ -52,44 +56,54 @@ function App() {
     }
   };
 
-  if (currentPath === '/login') return <StudentLogin navigate={navigate} />;
-  if (currentPath === '/register') return <StudentRegister navigate={navigate} />;
-  if (currentPath === '/forgot-password') return <ForgotPassword navigate={navigate} />;
-  if (currentPath === '/mobile-change') return <MobileChange navigate={navigate} />;
-  if (currentPath === '/track-application') return <TrackApplicationPage navigate={navigate} />;
-  if (currentPath === '/faq') return <FaqPage navigate={navigate} />;
-  if (currentPath === '/otr') return <OneTimeRegPage navigate={navigate} />;
-  if (currentPath === '/contact') return <ContactPage navigate={navigate} />;
+  // Dynamic route: /scheme/:id
+  if (currentPath.startsWith('/scheme/')) {
+    const schemeId = currentPath.split('/scheme/')[1];
+    return <SchemeDetailPage navigate={navigate} schemeId={schemeId} />;
+  }
 
-  if (currentPath === '/admin') return <AdminPortal navigate={navigate} />;
-
-  if (currentPath === '/portal' || currentPath === '/portal/') return <CandidateProfile navigate={navigate} />;
-  if (currentPath === '/portal/profile') return <CandidateProfile navigate={navigate} />;
-  if (currentPath === '/portal/track') return <TrackStudentPage navigate={navigate} />;
-  if (currentPath === '/portal/applications') return <ApplicationVerificationPage navigate={navigate} />;
-  if (currentPath === '/portal/qualifications') return <AddQualification navigate={navigate} />;
-  if (currentPath === '/portal/schemes') return <ApplicableSchemes navigate={navigate} />;
-  if (currentPath === '/portal/notices') return <NoticeBoardPage navigate={navigate} />;
-  if (currentPath === '/portal/change-password') return <ChangePasswordPage navigate={navigate} />;
-
-  return (
-    <div className="size-1140 vc-init" style={{ minHeight: '100vh', paddingBottom: '50px' }}>
-      <div className="content" style={{ minHeight: 'calc(100vh - 30px)', padding: '0px' }}>
-        <header>
-          <TopBar />
-          <Navbar navigate={navigate} />
-        </header>
-        <section style={{ paddingTop: '100px' }}>
-          <AboutSection />
-          <NoticeBoard />
-          <LoginSection navigate={navigate} />
-          <ContactSection />
-        </section>
-        <Footer />
-        <BottomBar navigate={navigate} />
-      </div>
-    </div>
-  );
+  switch (currentPath) {
+    case '/login':               return <StudentLogin navigate={navigate} />;
+    case '/register':            return <StudentRegister navigate={navigate} />;
+    case '/forgot-password':     return <ForgotPassword navigate={navigate} />;
+    case '/mobile-change':       return <MobileChange navigate={navigate} />;
+    case '/track-application':   return <TrackApplicationPage navigate={navigate} />;
+    case '/faq':                 return <FaqPage navigate={navigate} />;
+    case '/otr':                 return <OneTimeRegPage navigate={navigate} />;
+    case '/contact':             return <ContactPage navigate={navigate} />;
+    case '/admin':               return <AdminPortal navigate={navigate} />;
+    case '/eligibility':         return <EligibilityChecker navigate={navigate} />;
+    case '/sanctioned':          return <SanctionedList navigate={navigate} />;
+    case '/portal':
+    case '/portal/':
+    case '/portal/profile':      return <CandidateProfile navigate={navigate} />;
+    case '/portal/track':        return <TrackStudentPage navigate={navigate} />;
+    case '/portal/applications': return <ApplicationVerificationPage navigate={navigate} />;
+    case '/portal/qualifications': return <AddQualification navigate={navigate} />;
+    case '/portal/schemes':      return <ApplicableSchemes navigate={navigate} />;
+    case '/portal/documents':    return <DocumentVault navigate={navigate} />;
+    case '/portal/notices':      return <NoticeBoardPage navigate={navigate} />;
+    case '/portal/change-password': return <ChangePasswordPage navigate={navigate} />;
+    default:
+      return (
+        <div className="size-1140 vc-init" style={{ minHeight: '100vh', paddingBottom: '50px' }}>
+          <div className="content" style={{ minHeight: 'calc(100vh - 30px)', padding: '0px' }}>
+            <header>
+              <TopBar />
+              <Navbar navigate={navigate} />
+            </header>
+            <section style={{ paddingTop: '100px' }}>
+              <AboutSection />
+              <NoticeBoard />
+              <LoginSection navigate={navigate} />
+              <ContactSection />
+            </section>
+            <Footer />
+            <BottomBar navigate={navigate} />
+          </div>
+        </div>
+      );
+  }
 }
 
 export default App;

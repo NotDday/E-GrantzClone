@@ -62,6 +62,9 @@ app.use('/api/schemes', require('./routes/schemeRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/documents', require('./routes/documentRoutes'));
+app.use('/api/audit', require('./routes/auditRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 // Handle 404
 app.use((req, res, next) => {
